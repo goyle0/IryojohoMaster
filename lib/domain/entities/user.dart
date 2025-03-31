@@ -1,15 +1,37 @@
+/// ユーザー情報を表すエンティティクラス
 class User {
+  /// ユーザーの一意識別子
   final String id;
-  final String email;
+
+  /// ユーザーのメールアドレス
+  final String? email;
+
+  /// ユーザーの表示名
   final String? name;
-  final DateTime? lastLoginAt;
 
-  const User({
-    required this.id,
-    required this.email,
-    this.name,
-    this.lastLoginAt,
-  });
+  /// ユーザーのアバター画像URL
+  final String? avatarUrl;
 
-  String get displayName => name ?? email;
+  /// ユーザーオブジェクトのコンストラクタ
+  ///
+  /// [id] ユーザーID（必須）
+  /// [email] メールアドレス（オプション）
+  /// [name] 表示名（オプション）
+  /// [avatarUrl] アバター画像URL（オプション）
+  User({required this.id, this.email, this.name, this.avatarUrl});
+
+  /// 現在のユーザー情報をベースに新しいユーザーオブジェクトを作成
+  ///
+  /// [name] 更新する表示名
+  /// [avatarUrl] 更新するアバター画像URL
+  ///
+  /// 指定されていないパラメータは現在の値を維持
+  User copyWith({String? name, String? avatarUrl}) {
+    return User(
+      id: id,
+      email: email,
+      name: name ?? this.name,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+    );
+  }
 }

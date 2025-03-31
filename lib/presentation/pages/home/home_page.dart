@@ -1,3 +1,7 @@
+/// アプリケーションのホーム画面
+///
+/// ホーム、問題、カレンダー、分析、設定の5つのタブを表示する
+/// メインナビゲーションインターフェイスを提供する
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:adaptive_navigation/adaptive_navigation.dart';
@@ -10,6 +14,7 @@ import 'package:timeline_tile/timeline_tile.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 
+/// ホーム画面のステートフルウィジェット
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -17,42 +22,32 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+/// ホーム画面の状態クラス
 class _HomePageState extends State<HomePage> {
+  /// 現在選択されているタブのインデックス
   int _selectedIndex = 0;
+
+  /// ナビゲーションの宛先定義
   final _destinations = const [
     AdaptiveScaffoldDestination(title: 'ホーム', icon: Icons.home),
     AdaptiveScaffoldDestination(title: '問題', icon: Icons.question_answer),
-    AdaptiveScaffoldDestination(title: '学習計画', icon: Icons.calendar_month),
-    AdaptiveScaffoldDestination(title: '分析', icon: Icons.analytics),
+    AdaptiveScaffoldDestination(title: 'カレンダー', icon: Icons.calendar_month),
+    AdaptiveScaffoldDestination(title: '分析', icon: Icons.bar_chart),
     AdaptiveScaffoldDestination(title: '設定', icon: Icons.settings),
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _loadUserProgress();
-  }
-
-  void _loadUserProgress() {
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthenticatedState) {
-      context.read<StudyProgressBloc>().add(
-        LoadUserProgressEvent(authState.user.id),
-      );
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
+    /// アダプティブなナビゲーションスカフォールドを構築
     return AdaptiveNavigationScaffold(
       selectedIndex: _selectedIndex,
       destinations: _destinations,
-      onDestinationSelected: (index) {
+      onDestinationSelected: (int index) {
         setState(() {
           _selectedIndex = index;
         });
       },
-      appBar: AdaptiveAppBar(
+      appBar: AppBar(
         title: AnimatedTextKit(
           animatedTexts: [
             TypewriterAnimatedText(
@@ -73,6 +68,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// 選択されているタブに基づいて本体部分を構築する
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
@@ -90,43 +86,34 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// ホームタブの構築
   Widget _buildHomeTab() {
     return BlocBuilder<StudyProgressBloc, StudyProgressState>(
       builder: (context, state) {
         if (state is StudyProgressLoadingState) {
           return const Center(child: CircularProgressIndicator());
         }
-
         if (state is UserProgressLoadedState) {
-          return MasonryGridView.count(
-            crossAxisCount: MediaQuery.of(context).size.width > 600 ? 2 : 1,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            itemCount: 4,
-            itemBuilder: (context, index) {
-              switch (index) {
-                case 0:
-                  return _buildProgressCard(state);
-                case 1:
-                  return _buildNextLessonCard();
-                case 2:
-                  return _buildRecentActivitiesCard(state);
-                case 3:
-                  return _buildStudyRoadmapCard();
-                default:
-                  return const SizedBox.shrink();
-              }
-            },
+            child: Column(
+              children: [
+                _buildProgressSummary(state),
+                const SizedBox(height: 16),
+                _buildRecentActivity(state),
+                const SizedBox(height: 16),
+                _buildLearningPath(),
+              ],
+            ),
           );
         }
-
-        return const Center(child: Text('データの読み込みに失敗しました'));
+        return const Center(child: Text('データがありません。'));
       },
     );
   }
 
-  Widget _buildProgressCard(UserProgressLoadedState state) {
+  /// 学習進捗のサマリーカードを構築
+  Widget _buildProgressSummary(UserProgressLoadedState state) {
     final totalQuestions = state.progressList.length;
     final correctQuestions =
         state.progressList.where((progress) => progress.isCorrect).length;
@@ -160,45 +147,20 @@ class _HomePageState extends State<HomePage> {
                 backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                 animation: true,
                 animationDuration: 1000,
-                circularStrokeCap: CircularStrokeCap.round,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNextLessonCard() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '次の学習',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.play_arrow)),
-              title: const Text('医療情報システムの基礎'),
-              subtitle: const Text('残り3問'),
-              trailing: ElevatedButton(
-                onPressed: () {
-                  // TODO: 問題画面への遷移を実装
-                },
-                child: const Text('開始'),
-              ),
-            ),
+            Text('総問題数: $totalQuestions'),
+            Text('正解数: $correctQuestions'),
+            Text('正解率: ${(accuracy * 100).toStringAsFixed(1)}%'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRecentActivitiesCard(UserProgressLoadedState state) {
+  /// 最近の学習活動を表示するカードを構築
+  Widget _buildRecentActivity(UserProgressLoadedState state) {
     final recentProgress = state.progressList.take(5).toList();
 
     return Card(
@@ -229,7 +191,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                   endChild: ListTile(
                     title: Text('問題 ${progress.questionId}'),
-                    subtitle: Text(_formatDateTime(progress.answeredAt)),
+                    subtitle: Text(
+                      '${progress.isCorrect ? '正解' : '不正解'} - ${_formatDateTime(progress.answeredAt)}',
+                    ),
                     trailing: Icon(
                       progress.isCorrect ? Icons.check_circle : Icons.cancel,
                       color: progress.isCorrect ? Colors.green : Colors.red,
@@ -244,7 +208,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildStudyRoadmapCard() {
+  /// 学習パス（ロードマップ）を表示するカードを構築
+  Widget _buildLearningPath() {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -265,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.all(6),
               ),
               endChild: const ListTile(
-                title: Text('基礎知識の習得'),
+                title: Text('基礎を学ぶ'),
                 subtitle: Text('医療情報の基礎を学ぶ'),
               ),
             ),
@@ -300,6 +265,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// 問題タブの構築
   Widget _buildQuestionTab() {
     return MasonryGridView.count(
       crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
@@ -359,6 +325,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// カレンダータブの構築
   Widget _buildCalendarTab() {
     return Column(
       children: [
@@ -407,6 +374,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// 分析タブの構築
   Widget _buildAnalysisTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -580,6 +548,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// 設定タブの構築
   Widget _buildSettingsTab() {
     return ListView(
       children: [
@@ -592,60 +561,93 @@ class _HomePageState extends State<HomePage> {
                   if (state is AuthenticatedState) {
                     return ListTile(
                       leading: const CircleAvatar(child: Icon(Icons.person)),
-                      title: Text(state.user.displayName),
-                      subtitle: Text(state.user.email),
+                      title: Text(state.user.name ?? 'ユーザー'),
+                      subtitle: Text(state.user.email ?? ''),
                     );
                   }
-                  return const SizedBox.shrink();
+                  return const ListTile(
+                    leading: CircleAvatar(child: Icon(Icons.person)),
+                    title: Text('ゲスト'),
+                    subtitle: Text('ログインしていません'),
+                  );
                 },
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.notifications),
-                title: const Text('通知設定'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  // TODO: 通知設定画面への遷移を実装
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.dark_mode),
+                leading: const Icon(Icons.nightlight_round),
                 title: const Text('ダークモード'),
                 trailing: Switch(
-                  value: Theme.of(context).brightness == Brightness.dark,
+                  value: false,
                   onChanged: (value) {
-                    // TODO: テーマの切り替えを実装
+                    // TODO: テーマ切り替え機能を実装
                   },
                 ),
               ),
               ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text('ログアウト', style: TextStyle(color: Colors.red)),
+                leading: const Icon(Icons.notifications),
+                title: const Text('通知'),
+                trailing: Switch(
+                  value: true,
+                  onChanged: (value) {
+                    // TODO: 通知設定機能を実装
+                  },
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.help),
+                title: const Text('ヘルプ'),
                 onTap: () {
-                  showDialog(
-                    context: context,
-                    builder:
-                        (context) => AlertDialog(
-                          title: const Text('ログアウト'),
-                          content: const Text('本当にログアウトしますか？'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('キャンセル'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                context.read<AuthBloc>().add(LogoutEvent());
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text(
-                                'ログアウト',
-                                style: TextStyle(color: Colors.red),
+                  // TODO: ヘルプ画面への遷移を実装
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.info),
+                title: const Text('アプリについて'),
+                onTap: () {
+                  // TODO: アプリ情報画面への遷移を実装
+                },
+              ),
+              BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  if (state is AuthenticatedState) {
+                    return ListTile(
+                      leading: const Icon(Icons.logout, color: Colors.red),
+                      title: const Text(
+                        'ログアウト',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: const Text('ログアウト'),
+                                content: const Text('本当にログアウトしますか？'),
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.of(context).pop(),
+                                    child: const Text('キャンセル'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      context.read<AuthBloc>().add(
+                                        LogoutEvent(),
+                                      );
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: const Text(
+                                      'ログアウト',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
-                  );
+                        );
+                      },
+                    );
+                  }
+                  return const SizedBox.shrink();
                 },
               ),
             ],
@@ -655,20 +657,29 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// 日時を読みやすい形式にフォーマットする
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.month}/${dateTime.day} ${dateTime.hour}:${dateTime.minute}';
   }
 }
 
+/// グラフ用のカテゴリデータモデル
 class ChartData {
+  /// カテゴリ名
   final String category;
+
+  /// カテゴリの値
   final double value;
 
   ChartData(this.category, this.value);
 }
 
+/// 時系列データモデル
 class TimeSeriesData {
+  /// 日付
   final DateTime date;
+
+  /// 学習時間（時間単位）
   final double hours;
 
   TimeSeriesData(this.date, this.hours);

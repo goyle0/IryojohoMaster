@@ -14,7 +14,7 @@ dependencies:
   
   # 状態管理とデータ
   flutter_bloc: ^8.1.4
-  supabase_flutter: ^2.3.4
+  supabase_flutter: ^1.10.25
   equatable: ^2.0.5
   connectivity_plus: ^5.0.2
   sqflite: ^2.3.2
