@@ -6,10 +6,7 @@ import 'package:iryojoho_master/presentation/pages/analysis/analysis_page.dart';
 class CommonNavigationBar extends StatelessWidget {
   final int currentIndex;
 
-  const CommonNavigationBar({
-    super.key,
-    required this.currentIndex,
-  });
+  const CommonNavigationBar({super.key, required this.currentIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +14,7 @@ class CommonNavigationBar extends StatelessWidget {
       selectedIndex: currentIndex,
       onDestinationSelected: (index) {
         if (index == currentIndex) return;
-        
+
         switch (index) {
           case 0:
             Navigator.of(context).pushAndRemoveUntil(
@@ -40,18 +37,9 @@ class CommonNavigationBar extends StatelessWidget {
         }
       },
       destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home),
-          label: 'ホーム',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.calendar_month),
-          label: 'カレンダー',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.bar_chart),
-          label: '分析',
-        ),
+        NavigationDestination(icon: Icon(Icons.home), label: 'ホーム'),
+        NavigationDestination(icon: Icon(Icons.calendar_month), label: 'カレンダー'),
+        NavigationDestination(icon: Icon(Icons.bar_chart), label: '分析'),
       ],
     );
   }

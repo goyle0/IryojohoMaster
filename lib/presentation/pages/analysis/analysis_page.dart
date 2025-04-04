@@ -8,9 +8,7 @@ class AnalysisPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('学習分析'),
-      ),
+      appBar: AppBar(title: const Text('学習分析')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -47,7 +45,13 @@ class AnalysisPage extends StatelessWidget {
                               sideTitles: SideTitles(
                                 showTitles: true,
                                 getTitlesWidget: (value, meta) {
-                                  const titles = ['医療', '情報', 'システム', '法規', '統計'];
+                                  const titles = [
+                                    '医療',
+                                    '情報',
+                                    'システム',
+                                    '法規',
+                                    '統計',
+                                  ];
                                   if (value < 0 || value >= titles.length) {
                                     return const Text('');
                                   }
@@ -171,7 +175,9 @@ class AnalysisPage extends StatelessWidget {
                               dotData: FlDotData(show: true),
                               belowBarData: BarAreaData(
                                 show: true,
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.1),
                               ),
                             ),
                           ],
