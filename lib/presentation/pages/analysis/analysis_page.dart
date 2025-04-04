@@ -1,198 +1,191 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:iryojoho_master/presentation/blocs/study_progress/study_progress_bloc.dart';
-import 'package:iryojoho_master/presentation/blocs/auth/auth_bloc.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:iryojoho_master/presentation/widgets/common_navigation_bar.dart';
 
-class AnalysisPage extends StatefulWidget {
-  const AnalysisPage({Key? key}) : super(key: key);
-
-  @override
-  State<AnalysisPage> createState() => _AnalysisPageState();
-}
-
-class _AnalysisPageState extends State<AnalysisPage> {
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  void _loadData() {
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthenticatedState) {
-      context.read<StudyProgressBloc>().add(
-        LoadUserProgressEvent(authState.user.id),
-      );
-    }
-  }
+class AnalysisPage extends StatelessWidget {
+  const AnalysisPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('学習分析')),
-      body: BlocBuilder<StudyProgressBloc, StudyProgressState>(
-        builder: (context, state) {
-          if (state is StudyProgressLoadingState) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state is UserProgressLoadedState) {
-            final progressList = state.progressList;
-            final totalQuestions = progressList.length;
-            if (totalQuestions == 0) {
-              return const Center(child: Text('まだ学習データがありません'));
-            }
-
-            final correctAnswers =
-                progressList.where((progress) => progress.isCorrect).length;
-            final accuracy = (correctAnswers / totalQuestions * 100)
-                .toStringAsFixed(1);
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildOverallProgress(
-                    correctAnswers,
-                    totalQuestions,
-                    accuracy,
-                  ),
-                  const SizedBox(height: 24),
-                  _buildCategoryAnalysis(),
-                  const SizedBox(height: 24),
-                  _buildRecentProgress(progressList),
-                ],
-              ),
-            );
-          }
-
-          return const Center(child: Text('分析データを読み込めませんでした'));
-        },
+      appBar: AppBar(
+        title: const Text('学習分析'),
       ),
-    );
-  }
-
-  Widget _buildOverallProgress(
-    int correctAnswers,
-    int totalQuestions,
-    String accuracy,
-  ) {
-    return Card(
-      child: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('総合成績', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatCard('解答数', '$totalQuestions問'),
-                _buildStatCard('正解数', '$correctAnswers問'),
-                _buildStatCard('正答率', '$accuracy%'),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, String value) {
-    return Column(
-      children: [
-        Text(value, style: Theme.of(context).textTheme.headlineSmall),
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
-      ],
-    );
-  }
-
-  Widget _buildCategoryAnalysis() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('カテゴリー別成績', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            _buildCategoryProgressItem('医学・医療系', 0.75, '75%'),
-            const SizedBox(height: 8),
-            _buildCategoryProgressItem('情報処理技術系', 0.60, '60%'),
-            const SizedBox(height: 8),
-            _buildCategoryProgressItem('医療情報システム系', 0.80, '80%'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryProgressItem(
-    String category,
-    double progress,
-    String percentage,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(category),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'カテゴリー別成績',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 300,
+                      child: BarChart(
+                        BarChartData(
+                          alignment: BarChartAlignment.spaceAround,
+                          maxY: 100,
+                          titlesData: FlTitlesData(
+                            show: true,
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (value, meta) {
+                                  const titles = ['医療', '情報', 'システム', '法規', '統計'];
+                                  if (value < 0 || value >= titles.length) {
+                                    return const Text('');
+                                  }
+                                  return Text(
+                                    titles[value.toInt()],
+                                    style: const TextStyle(fontSize: 12),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          gridData: FlGridData(show: false),
+                          barGroups: [
+                            BarChartGroupData(
+                              x: 0,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: 75,
+                                  color: Colors.red,
+                                  width: 20,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ],
+                            ),
+                            BarChartGroupData(
+                              x: 1,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: 60,
+                                  color: Colors.blue,
+                                  width: 20,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ],
+                            ),
+                            BarChartGroupData(
+                              x: 2,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: 80,
+                                  color: Colors.green,
+                                  width: 20,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ],
+                            ),
+                            BarChartGroupData(
+                              x: 3,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: 65,
+                                  color: Colors.purple,
+                                  width: 20,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ],
+                            ),
+                            BarChartGroupData(
+                              x: 4,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: 70,
+                                  color: Colors.orange,
+                                  width: 20,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(width: 16),
-            Text(percentage),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecentProgress(List progressList) {
-    final recentProgress = progressList.take(5).toList();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('最近の学習', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: recentProgress.length,
-              itemBuilder: (context, index) {
-                final progress = recentProgress[index];
-                return ListTile(
-                  leading: Icon(
-                    progress.isCorrect ? Icons.check_circle : Icons.cancel,
-                    color: progress.isCorrect ? Colors.green : Colors.red,
-                  ),
-                  title: Text('問題 ${progress.questionId}'),
-                  subtitle: Text(
-                    '回答日時: ${_formatDateTime(progress.answeredAt)}',
-                  ),
-                );
-              },
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '学習時間の推移',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 300,
+                      child: LineChart(
+                        LineChartData(
+                          gridData: FlGridData(show: true),
+                          titlesData: FlTitlesData(
+                            rightTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                          ),
+                          borderData: FlBorderData(show: true),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: [
+                                FlSpot(0, 2),
+                                FlSpot(1, 1.5),
+                                FlSpot(2, 3),
+                                FlSpot(3, 2.5),
+                                FlSpot(4, 2),
+                                FlSpot(5, 4),
+                                FlSpot(6, 3),
+                              ],
+                              isCurved: true,
+                              color: Theme.of(context).colorScheme.primary,
+                              barWidth: 3,
+                              dotData: FlDotData(show: true),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
       ),
+      bottomNavigationBar: const CommonNavigationBar(currentIndex: 2),
     );
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.year}/${dateTime.month}/${dateTime.day} '
-        '${dateTime.hour}:${dateTime.minute}';
   }
 }
